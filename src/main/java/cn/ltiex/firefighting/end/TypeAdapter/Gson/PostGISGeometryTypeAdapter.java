@@ -10,7 +10,11 @@ import java.io.IOException;
 public class PostGISGeometryTypeAdapter extends TypeAdapter<Geometry> {
     @Override
     public void write(JsonWriter jsonWriter, Geometry geometry) throws IOException {
-        jsonWriter.value(geometry == null ? "" : geometry.toString());
+        StringBuffer sb = new StringBuffer("");
+        if(geometry != null){
+            geometry.outerWKT(sb, false);
+        }
+        jsonWriter.value(sb.toString());
     }
 
     @Override

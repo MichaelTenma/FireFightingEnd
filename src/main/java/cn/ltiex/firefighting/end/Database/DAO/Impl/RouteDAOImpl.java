@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Repository
@@ -44,5 +45,28 @@ public class RouteDAOImpl implements RouteDAO {
         );
         RouteEntity routeEntity = new RouteEntity();
         return routeEntity.transform(segmentEntityList);
+    }
+
+    @Override
+    public List<SegmentEntity> generateServiceAreaBySecond(VertexEntity[] starts, double serviceTimeInSecond) {
+        StringBuilder idParam = new StringBuilder("ARRAY[");
+        for(VertexEntity vertexEntity : starts){
+            idParam.append(vertexEntity.getId()).append(",");
+        }
+        idParam.setCharAt(idParam.length()-1, ']');
+
+        String queryString = "WITH serviceArea AS (\n" +
+                "\tSELECT * FROM pgr_drivingDistance(\n" +
+                "\t\t'SELECT gid as id, source, target, cost, reverse_cost FROM roads',\n" +
+                "\t\t"+ idParam +", ?\n" +
+                "\t)\n" +
+                ") SELECT serviceArea.cost as cost, roads.maxspeed as maxspeed, roads.geom as geom\n" +
+                "FROM serviceArea, roads WHERE serviceArea.edge = roads.gid;";
+
+
+        List<SegmentEntity> segmentEntityList = this.jdbcTemplate.query(
+            queryString, new SegmentEntityRowMapper(), serviceTimeInSecond
+        );
+        return segmentEntityList;
     }
 }
